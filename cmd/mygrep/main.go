@@ -42,7 +42,7 @@ func matchLine(line []byte, pattern string) (bool, error) {
 	// }
 	if bytes.ContainsAny(line, pattern) {
 		return true, nil
-	} else if pattern == "/d" {
+	} else if pattern == `\d` {
 		if bytes.ContainsAny(line, "0123456789") {
 			return true, nil
 		}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"unicode/utf8"
+	// "unicode/utf8"
 )
 
 // Usage: echo <input_text> | your_program.sh -E <pattern>
@@ -37,13 +37,15 @@ func main() {
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
-	if utf8.RuneCountInString(pattern) != 1 {
-		return false, fmt.Errorf("unsupported pattern: %q", pattern)
+	// if utf8.RuneCountInString(pattern) != 1 {
+	// 	return false, fmt.Errorf("unsupported pattern: %q", pattern)
+	// }
+	if bytes.ContainsAny(line, pattern) {
+		return true, nil
+	} else if pattern == "/d" {
+		if bytes.ContainsAny(line, "0123456789") {
+			return true, nil
+		}
 	}
-
-	var ok bool
-	
-	ok = bytes.ContainsAny(line, pattern)
-
-	return ok, nil
+	return false, nil
 }

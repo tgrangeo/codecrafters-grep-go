@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	// "unicode/utf8"
 )
 
@@ -44,6 +45,11 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		return true, nil
 	} else if pattern == `\d` {
 		if bytes.ContainsAny(line, "0123456789") {
+			return true, nil
+		}
+	} else if pattern == `\w` {
+		re := regexp.MustCompile(`[a-zA-Z0-9]`)
+		if re.Match(line) {
 			return true, nil
 		}
 	}

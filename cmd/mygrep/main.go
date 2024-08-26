@@ -52,6 +52,15 @@ func matchLine(line []byte, pattern string) (bool, error) {
 		if re.Match(line) {
 			return true, nil
 		}
+	} else if regexp.MustCompile(`^\[\^[a-zA-Z0-9]+\]$`).MatchString(pattern){
+		re := regexp.MustCompile(`^\[\^[a-zA-Z0-9]+\]$`)
+		matches := re.FindSubmatch([]byte(pattern))
+		if len(matches) > 1 {
+			toFind :=  string(matches[1])
+			if !bytes.ContainsAny(line, toFind) {
+				return true, nil
+			}
+		}
 	}
 	return false, nil
 }

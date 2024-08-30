@@ -6,13 +6,12 @@ import (
 	"io"
 	"os"
 	"regexp"
-	// "unicode/utf8"
 )
 
 func main() {
 	if len(os.Args) < 3 || os.Args[1] != "-E" {
 		fmt.Fprintf(os.Stderr, "usage: mygrep -E <pattern>\n")
-		os.Exit(2) // 1 means no lines were selected, >1 means error
+		os.Exit(2)
 	}
 
 	pattern := os.Args[2]
@@ -34,34 +33,51 @@ func main() {
 	}
 }
 
-func matchLine(line []byte, pattern string) (bool, error) {
-	// if utf8.RuneCountInString(pattern) != 1 {
-	// 	return false, fmt.Errorf("unsupported pattern: %q", pattern)
-	// }
-	if regexp.MustCompile(`^\[\^[a-zA-Z0-9]+\]$`).MatchString(pattern) {
-		re := regexp.MustCompile(`^\[\^([a-zA-Z0-9]+)\]$`)
-		matches := re.FindSubmatch([]byte(pattern))
-		if len(matches) > 1 {
-			toFind := string(matches[1])
-			for _, char := range toFind {
-
-				if bytes.ContainsRune(line, char) {
-					return false, nil
-				}
-			}
-			return true, nil
-		}
-	} else if bytes.ContainsAny(line, pattern) {
-		return true, nil
-	} else if pattern == `\d` {
-		if bytes.ContainsAny(line, "0123456789") {
-			return true, nil
-		}
-	} else if pattern == `\w` {
-		re := regexp.MustCompile(`[a-zA-Z0-9]`)
-		if re.Match(line) {
-			return true, nil
+func getPattern(patternLine string) []string {
+	res := []string{}
+	for i := 0; i < len(patternLine); i++ {
+		if patternLine[i] == '\\' && i+1 < len(patternLine) {
+			res = append(res, patternLine[i:i+2])
+			i++
+		} else {
+			res = append(res, string(patternLine[i]))
 		}
 	}
-	return false, nil
+	return res
+}
+
+func checkNextPattern(c byte, p string) bool {
+	switch p {
+	case `\d`:
+		return bytes.ContainsAny([]byte{c}, "0123456789")
+	case `\w`:
+		return regexp.MustCompile(`[a-zA-Z0-9]`).Match([]byte{c})
+	default:
+		if p[0] == '[' && p[len(p)-1] == ']' {
+			if p[1] == '^' {
+				return !bytes.ContainsAny([]byte{c}, p[2:len(p)-1])
+			}
+			return bytes.ContainsAny([]byte{c}, p[1:len(p)-1])
+		}
+		return string(c) == p
+	}
+}
+
+func matchLine(line []byte, pattern string) (bool, error) {
+	patternArray := getPattern(pattern)
+	lineIndex := 0
+
+	for _, p := range patternArray {
+		if lineIndex >= len(line) {
+			return false, nil
+		}
+
+		if !checkNextPattern(line[lineIndex], p) {
+			return false, nil
+		}
+
+		lineIndex++
+	}
+
+	return true, nil
 }

@@ -45,6 +45,7 @@ func checkBackReferences(line []byte, pattern string) (string, error) {
 
 func matchLine(line []byte, pattern string) (bool, error) {
 	pattern, err := checkBackReferences(line, pattern)
+	fmt.Println(pattern)
 	if err != nil {
 		return false, fmt.Errorf("invalid back reference: %v", err)
 	}

@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -29,23 +30,16 @@ func main() {
 	}
 }
 
-func checkBackReferences(line []byte, pattern string) (string, error) {
-	if strings.Contains(pattern, "\\1") {
-		res := pattern
-		begin := strings.IndexRune(res, '(')
-		end := strings.IndexRune(res, ')')
-		group := res[begin : end+1]
-		// res = strings.ReplaceAll(res, "(", "")
-		// res = strings.ReplaceAll(res, ")", "")
-		res = strings.ReplaceAll(res, `\1`, group)
-		return res, nil
+func checkBackReferences(pattern string) (string, error) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return "", fmt.Errorf("invalid pattern: %v", err)
 	}
-	return pattern, nil
+	return re.String(), nil
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {
-	pattern, err := checkBackReferences(line, pattern)
-	fmt.Println(pattern)
+	pattern, err := checkBackReferences(pattern)
 	if err != nil {
 		return false, fmt.Errorf("invalid back reference: %v", err)
 	}

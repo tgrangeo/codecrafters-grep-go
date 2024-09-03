@@ -63,14 +63,39 @@ func checkBackReferences(pattern string) (string, error) {
 	return newPattern.String(), nil
 }
 
+// func matchLine(line []byte, pattern string) (bool, error) {
+// 	pattern, err := checkBackReferences(pattern)
+// 	if err != nil {
+// 		return false, fmt.Errorf("invalid back reference: %v", err)
+// 	}
+// 	re, err := regexp.Compile(pattern)
+// 	if err != nil {
+// 		return false, fmt.Errorf("invalid pattern: %v", err)
+// 	}
+// 	return re.Match(line), nil
+// }
+
 func matchLine(line []byte, pattern string) (bool, error) {
-	pattern, err := checkBackReferences(pattern)
-	if err != nil {
-		return false, fmt.Errorf("invalid back reference: %v", err)
-	}
+	// Compile the regex pattern
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return false, fmt.Errorf("invalid pattern: %v", err)
 	}
-	return re.Match(line), nil
+
+	// Match against the line
+	matches := re.FindStringSubmatch(string(line))
+	if matches == nil {
+		return false, nil // No match found
+	}
+
+	// Check if backreferences match the corresponding groups
+	for i := 1; i < len(matches); i++ {
+		for j := i + 1; j < len(matches); j++ {
+			if matches[i] != matches[j] {
+				return false, nil // Backreference does not match the corresponding group
+			}
+		}
+	}
+
+	return true, nil // Everything matched correctly
 }

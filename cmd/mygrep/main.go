@@ -5,8 +5,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strconv"
-	"strings"
 )
 
 func main() {

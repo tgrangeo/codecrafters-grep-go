@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strings"
 )
 
 func main() {
@@ -29,11 +30,37 @@ func main() {
 }
 
 func checkBackReferences(pattern string) (string, error) {
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		return "", fmt.Errorf("invalid pattern: %v", err)
+	var groups []string
+	var newPattern strings.Builder
+	groupCounter := 1
+
+	for i := 0; i < len(pattern); i++ {
+		switch pattern[i] {
+		case '(':
+			start := i
+			end := i + strings.Index(pattern[i:], ")")
+			groups = append(groups, pattern[start:end+1])
+			groupCounter++
+			newPattern.WriteString(pattern[start:end+1])
+			i = end
+		case '\\':
+			if i+1 < len(pattern) && pattern[i+1] >= '1' && pattern[i+1] <= '9' {
+				refNum := int(pattern[i+1] - '0')
+				if refNum <= len(groups) {
+					newPattern.WriteString(groups[refNum-1])
+				} else {
+					return "", fmt.Errorf("invalid back reference: \\%d", refNum)
+				}
+				i++
+			} else {
+				newPattern.WriteByte(pattern[i])
+			}
+		default:
+			newPattern.WriteByte(pattern[i])
+		}
 	}
-	return re.String(), nil
+
+	return newPattern.String(), nil
 }
 
 func matchLine(line []byte, pattern string) (bool, error) {

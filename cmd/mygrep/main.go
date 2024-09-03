@@ -34,9 +34,9 @@ func checkBackReferences(line []byte, pattern string) (string, error) {
 		res := pattern
 		begin := strings.IndexRune(res, '(')
 		end := strings.IndexRune(res, ')')
-		group := res[begin+1 : end]
-		res = strings.ReplaceAll(res, "(", "")
-		res = strings.ReplaceAll(res, ")", "")
+		group := res[begin : end+1]
+		// res = strings.ReplaceAll(res, "(", "")
+		// res = strings.ReplaceAll(res, ")", "")
 		res = strings.ReplaceAll(res, `\1`, group)
 		return res, nil
 	}

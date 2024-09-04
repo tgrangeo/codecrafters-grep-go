@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -32,24 +31,43 @@ func main() {
 
 func checkBackReferences(pattern string) (string, error) {
 	group := []string{}
-	for i := 0; i < len(pattern); i++ {
-		if pattern[i] == '('{
-			end := strings.IndexRune(pattern[i:], ')')
-			group = append(group, pattern[i:i+end+1])
-		}
-		if pattern[i] == '\\'{
-			if i+1 < len(pattern) && pattern[i+1] >= '1' && pattern[i+1] <= '9' {
-				refNum := int(pattern[i+1] - '0')
-				if refNum <= len(group) {
-					pattern = strings.ReplaceAll(pattern, "\\" +  strconv.Itoa(refNum), group[refNum-1])
-				} else {
-					return "", fmt.Errorf("invalid back reference: \\%d", refNum)
+	result := strings.Builder{}
+	i := 0
+
+	for i < len(pattern) {
+		if pattern[i] == '(' {
+			j := i + 1
+			depth := 1
+			for j < len(pattern) && depth > 0 {
+				if pattern[j] == '(' {
+					depth++
+				} else if pattern[j] == ')' {
+					depth--
 				}
-			}	
+				j++
+			}
+			if depth > 0 {
+				return "", fmt.Errorf("unbalanced parentheses")
+			}
+			group = append(group, pattern[i:j])
+			result.WriteString(pattern[i:j])
+			i = j
+		} else if pattern[i] == '\\' && i+1 < len(pattern) && pattern[i+1] >= '1' && pattern[i+1] <= '9' {
+			refNum := int(pattern[i+1] - '0')
+			if refNum <= len(group) {
+				result.WriteString(group[refNum-1])
+			} else {
+				return "", fmt.Errorf("invalid back reference: \\%d", refNum)
+			}
+			i += 2
+		} else {
+			result.WriteByte(pattern[i])
+			i++
 		}
 	}
-	return pattern, nil
+	return result.String(), nil
 }
+
 
 func matchLine(line []byte, pattern string) (bool, error) {
 	pattern, err := checkBackReferences(pattern)

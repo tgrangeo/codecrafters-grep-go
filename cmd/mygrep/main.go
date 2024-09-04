@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
@@ -30,72 +31,34 @@ func main() {
 }
 
 func checkBackReferences(pattern string) (string, error) {
-	var groups []string
-	var newPattern strings.Builder
-	groupCounter := 1
-
+	group := []string{}
 	for i := 0; i < len(pattern); i++ {
-		switch pattern[i] {
-		case '(':
-			start := i
-			end := i + strings.Index(pattern[i:], ")")
-			groups = append(groups, pattern[start:end+1])
-			groupCounter++
-			newPattern.WriteString(pattern[start:end+1])
-			i = end
-		case '\\':
+		if pattern[i] == '('{
+			end := strings.IndexRune(pattern[i:], ')')
+			group = append(group, pattern[i:i+end+1])
+		}
+		if pattern[i] == '\\'{
 			if i+1 < len(pattern) && pattern[i+1] >= '1' && pattern[i+1] <= '9' {
 				refNum := int(pattern[i+1] - '0')
-				if refNum <= len(groups) {
-					newPattern.WriteString(groups[refNum-1])
+				if refNum <= len(group) {
+					pattern = strings.ReplaceAll(pattern, "\\" +  strconv.Itoa(refNum), group[refNum-1])
 				} else {
 					return "", fmt.Errorf("invalid back reference: \\%d", refNum)
 				}
-				i++
-			} else {
-				newPattern.WriteByte(pattern[i])
-			}
-		default:
-			newPattern.WriteByte(pattern[i])
+			}	
 		}
 	}
-
-	return newPattern.String(), nil
+	return pattern, nil
 }
 
-// func matchLine(line []byte, pattern string) (bool, error) {
-// 	pattern, err := checkBackReferences(pattern)
-// 	if err != nil {
-// 		return false, fmt.Errorf("invalid back reference: %v", err)
-// 	}
-// 	re, err := regexp.Compile(pattern)
-// 	if err != nil {
-// 		return false, fmt.Errorf("invalid pattern: %v", err)
-// 	}
-// 	return re.Match(line), nil
-// }
-
 func matchLine(line []byte, pattern string) (bool, error) {
-	// Compile the regex pattern
+	pattern, err := checkBackReferences(pattern)
+	if err != nil {
+		return false, fmt.Errorf("invalid back reference: %v", err)
+	}
 	re, err := regexp.Compile(pattern)
 	if err != nil {
 		return false, fmt.Errorf("invalid pattern: %v", err)
 	}
-
-	// Match against the line
-	matches := re.FindStringSubmatch(string(line))
-	if matches == nil {
-		return false, nil // No match found
-	}
-
-	// Check if backreferences match the corresponding groups
-	for i := 1; i < len(matches); i++ {
-		for j := i + 1; j < len(matches); j++ {
-			if matches[i] != matches[j] {
-				return false, nil // Backreference does not match the corresponding group
-			}
-		}
-	}
-
-	return true, nil // Everything matched correctly
+	return re.Match(line), nil
 }
